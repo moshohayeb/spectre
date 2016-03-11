@@ -5,6 +5,9 @@ Currently only supports imdb watchlist (__has to be public__) and thepiratebay a
 
 You can test it with the default watchlist currently in conf.js
 
+## Requirements
+I am using quite a few ES6 features so I am not sure which is the minimal required node version. Currently tested with __Node v.5.6__
+
 ## How to run
  ```
 git clone https://github.com/moshohayeb/spectre.git
