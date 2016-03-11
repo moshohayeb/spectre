@@ -7,7 +7,7 @@ You can test it with the default watchlist currently in conf.js
 
 ## How to run
  ```
-	git clone https://github.com/moshohayeb/spectre.git
+git clone https://github.com/moshohayeb/spectre.git
 cd spectre
 npm install
  ```
