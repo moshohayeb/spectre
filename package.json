@@ -1,0 +1,37 @@
+{
+  "name": "spectre",
+  "version": "0.0.1",
+  "description": "Monitor and download movies using BitTorrent",
+  "main": "index.js",
+  "dependencies": {
+    "async": "^1.5.2",
+    "bluebird": "^3.3.3",
+    "cheerio": "^0.20.0",
+    "concat-stream": "^1.5.1",
+    "cookie": "^0.2.3",
+    "debug": "^2.2.0",
+    "file-type": "^3.8.0",
+    "fs-extra": "^0.26.5",
+    "lodash": "^4.6.1",
+    "mkdirp": "^0.5.1",
+    "moment": "^2.11.2",
+    "opensubtitles-api": "^2.4.0",
+    "pretty-bytes": "^3.0.1",
+    "read-chunk": "^1.0.1",
+    "request": "^2.69.0",
+    "sprintf-js": "^1.0.3",
+    "tmp": "0.0.28",
+    "torrent-stream": "^1.0.2",
+    "url-join": "0.0.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "Torrent",
+    "Movies"
+  ],
+  "author": "Mohammed Alshohayeb <moshohayeb@gmail.com>",
+  "license": "MIT"
+}
