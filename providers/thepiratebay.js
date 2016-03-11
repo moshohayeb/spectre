@@ -58,55 +58,56 @@ module.exports = Promise.coroutine(function* (title) {
     let host = yield __resolveHost()
 
     let result = yield Promise.map(pages, page => {
-        let url = __buildURL({ title, host, page })
-        debug('getting url: %s', url)
-        return request.getAsync(url).then(rs => {
-            let $ = cheerio.load(rs.body)
-            let partial = _.map($('#searchResult tr'), title => {
-                let name = $('div.detName > a', title).text()
-                if (!name) return null
-                let quality = _.last($('td.vertTh > center > a:nth-child(3)').attr('href').split('/'))
-                let seeds = $('td:nth-child(3)', title).text()
-                let peers = $('td:nth-child(4)', title).text()
-                let freeleech = true
-                let age = __toDay(DATE_REGEX.exec($('.detDesc', title).text())[1] || '12-12 2000')
-                let size = __toByte(SIZE_REGEX.exec($('.detDesc', title).text())[1] || '0 GiB')
-                let magnet = $('td:nth-child(2) > a:nth-child(2)', title).attr('href')
-                return {
-                    name,
-                    age,
-                    size,
-                    seeds,
-                    peers,
-                    freeleech,
-                    magnet,
-                    quality: QUALITY[quality] || '480p'
-                }
-            })
+            let url = __buildURL({ title, host, page })
+            debug('getting url: %s', url)
+            return request.getAsync(url).then(rs => {
+                    let $ = cheerio.load(rs.body)
+                    let partial = _.map($('#searchResult tr'), title => {
+                        let name = $('div.detName > a', title).text()
+                        if (!name) return null
+                        let quality = _.last($('td.vertTh > center > a:nth-child(3)').attr('href').split('/'))
+                        let seeds = $('td:nth-child(3)', title).text()
+                        let peers = $('td:nth-child(4)', title).text()
+                        let freeleech = true
+                        let age = __toDay(DATE_REGEX.exec($('.detDesc', title).text())[1] || '12-12 2000')
+                        let size = __toByte(SIZE_REGEX.exec($('.detDesc', title).text())[1] || '0 GiB')
+                        let magnet = $('td:nth-child(2) > a:nth-child(2)', title).attr('href')
+                        return {
+                            name,
+                            age,
+                            size,
+                            seeds,
+                            peers,
+                            freeleech,
+                            magnet,
+                            quality: QUALITY[quality] || '480p'
+                        }
+                    })
 
-            return partial
-        }) // getAsync then
-    }, { concurrency: 2 }) // Promise Map
+                    return partial
+                }) // getAsync then
+        }, { concurrency: 2 }) // Promise Map
 
     let torrents = Array.prototype.concat.apply([], result)
+    // TODO: Better selection strategy
     let torrent =
         _.chain(torrents)
         .compact()
         .filter(t => {
-			// execlude err results
+            // execlude err results
             let kebab = _.kebabCase(t.name)
             return _.includes(kebab, titleKebab)
         })
-		.filter(t => {
-			// execlude 3D
-			let name = t.name.toLowerCase()
-			let _3d = _.includes(name, '3d')
+        .filter(t => {
+            // execlude 3D
+            let name = t.name.toLowerCase()
+            let _3d = _.includes(name, '3d')
             return !_3d
-		})
+        })
         .orderBy(t => {
             return (+title.seeds + +title.peers) / 2
         }, 'desc')
-		.first()
+        .first()
         .value()
 
     if (!torrents) {
