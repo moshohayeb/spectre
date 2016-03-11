@@ -88,8 +88,10 @@ spectre()
         console.log('done')
     })
     .catch(err => {
-        console.log("Err: ", err)
+        console.log('An unexpected error occured. Try fixing the problem and rerun the script')
+        console.log("Raw Err [%s] ", err)
     })
     .finally(function () {
-        console.log('finished')
+        // Perhaps setTimeout and rerun every X Hours
+        ;
     })

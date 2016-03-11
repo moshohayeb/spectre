@@ -17,7 +17,7 @@ module.exports = {
 			password: process.env.osPassword
 		}
 	},
-	concurrency: 1,
-	dlDir: '/Users/moshohayeb/Desktop/Code/spectre/H/',
-	tmpDir: '/Users/moshohayeb/Desktop/Code/spectre/movies/',
+	concurrency: 3,
+	dlDir: '/Volumes/MOHD2/Watchlist/',
+	tmpDir: '/tmp/spectre/',
 }
