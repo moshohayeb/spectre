@@ -34,6 +34,10 @@ let processTitle = function (title, done) {
             throw new Error('err for title %s: ' + title)
         }
 
+        if (metadata.type !== 'movie') {
+            throw new Error('skipping title "%s": ' + title)
+        }
+
         // download the movie
         // TODO handling failures/no seeds?
         // As it stands now, a slow torrent will block all others
@@ -76,6 +80,9 @@ let spectre = Promise.coroutine(function* () {
     _.each(downloaded, mov => {
         debug('title "%s" is already downloaded', mov)
     })
+
+    debug('Already have the following titles: %s', _.join(downloaded, ', '))
+    debug('Downloading the following titles: %s', _.join(undownloaded, ', '))
 
     return new Promise(function (resolve, reject) {
         // resolve will be called when all titles are downloaded

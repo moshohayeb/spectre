@@ -27,6 +27,7 @@ Have a look at conf.js
 
 ## TODO
 There are MANY things missing, If you'd like something in particular feel free to open an issue
+ - Provide a way to choose a profile (720p/1080)
  - Torrent selection strategy
  - Handling slow downloads/failures
  - Better logic for determining the actual downloaded video
