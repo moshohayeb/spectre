@@ -6,7 +6,7 @@ let path = require('path')
 let debug = require('debug')('spectre:subtitle')
 let util = require('./util')
 
-let download = Promise.coroutine(function* (info) {
+let download = Promise.coroutine(function* (info, conf) {
     let os = new OpenSubtitles({ useragent: 'OSTestUserAgent' })
     debug('downloading subtitle for title: %s', info.metadata.title)
     let name = info.movie.name

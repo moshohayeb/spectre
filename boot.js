@@ -1,9 +1,12 @@
 'use strict'
 
 module.exports = function () {
+	/* Override native Promise implementation (or add) globally */
 	GLOBAL.Promise = require('bluebird')
 	GLOBAL._ = require('lodash')
 	GLOBAL.sprintf = require('sprintf-js').sprintf
+
+	/* Promisify modules */
     Promise.promisifyAll(require('fs-extra'))
     Promise.promisifyAll(require('request'))
 	Promise.promisifyAll(require("mkdirp"));

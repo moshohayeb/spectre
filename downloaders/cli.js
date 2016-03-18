@@ -2,22 +2,17 @@
 
 let torrentStream = require('torrent-stream')
 let prettybyte = require('pretty-bytes')
-let Promise = require('bluebird')
-let _ = require('lodash')
 let debug = require('debug')('spectre:cli')
 let path = require('path')
 
-let conf = require('../conf')
+module.exports = function (torrent, conf) {
 
-module.exports = function (torrent, opts) {
-
-    debug('attempting to download: %s', torrent.name)
+    debug('Attempting to download: %s', torrent.name)
 
     let resolver = function (resolve, reject) {
-        // let engine = torrentStream(magnet, { path: conf.tmpDir })
         let engine = torrentStream(torrent.magnet, { path: conf.tmpDir })
         let reporter
-        let rv = {}
+        let retval = {}
 
         engine.on('ready', () => {
             let swarm = engine.swarm
@@ -39,13 +34,13 @@ module.exports = function (torrent, opts) {
 
         engine.on('idle', () => {
             clearInterval(reporter)
-            rv.files = _.map(engine.files, f => {
+            retval.files = _.map(engine.files, f => {
                 return {
                     path: path.join(conf.tmpDir, f.path),
                     size: f.length
                 }
             })
-            resolve(rv)
+            resolve(retval)
         })
     }
 

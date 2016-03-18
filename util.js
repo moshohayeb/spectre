@@ -1,7 +1,6 @@
 'use strict'
 
 let request = require('request')
-let concat = require('concat-stream')
 let parseTorrent = require('parse-torrent')
 let fs = require('fs-extra')
 
@@ -18,4 +17,8 @@ exports.wget = function (url, localfile) {
 exports.torrentToMagnet = function (torrentBuf) {
     let torrent = parseTorrent(torrentBuf)
     return parseTorrent.toMagnetURI(torrent)
+}
+
+exports.isAscii = function(str) {
+    return /^[\x00-\x7F]*$/.test(str);
 }

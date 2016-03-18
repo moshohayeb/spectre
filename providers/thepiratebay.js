@@ -14,7 +14,7 @@ const SEARCH_URL = 'http://%s/search/%s/%d/99/%s/'
 
 const DATE_REGEX = /Uploaded ([^,]+),/
 const SIZE_REGEX = /Size ([^,]+),/
-const PAGE_MAX = 4
+const PAGE_MAX = 1
 const QUALITY = {
     201: '480p',
     202: '1080p',

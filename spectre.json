@@ -1,0 +1,22 @@
+ {
+	"providers": {
+		"torrentday": {
+			"username": "",
+			"password": ""
+		}
+	},
+	"lists": [
+		"http://www.imdb.com/list/ls036788022",
+		"http://www.imdb.com/list/ls036922884"
+	],
+	"subtitles": {
+		"language": "ar",
+		"openSubtitles": {
+			"username": "",
+			"password": ""
+		}
+	},
+	"concurrency": 3,
+	"dlDir": "/Users/moshohayeb/Movies",
+	"tmpDir": "/tmp/spectre/"
+}
