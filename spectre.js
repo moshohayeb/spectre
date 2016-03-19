@@ -15,7 +15,7 @@ let sp = {
     list: require('./list'),
     client: require('./downloaders/cli'),
     search: require('./providers/thepiratebay'),
-    metadata: require('./metadata/omdb')
+    metadata: require('./metadata')
 }
 
 let processTitle = function (conf, title, done) {
@@ -33,8 +33,8 @@ let processTitle = function (conf, title, done) {
         let torrents = p[0]
         let metadata = p[1]
 
-        if (!torrents || !metadata) {
-            throw new Error('no torrents or meta info')
+        if (!metadata) {
+            throw new Error('meta data could not be retrieved')
         }
 
         if (metadata.type !== 'movie') {
@@ -43,6 +43,7 @@ let processTitle = function (conf, title, done) {
 
 		let torrent = selector(title, torrents)
         if (!torrent) {
+			/* TODO: Possibly fallback on best guess */
 			throw new Error ('no appropriate release found')
         }
 
@@ -87,28 +88,29 @@ let processTitle = function (conf, title, done) {
 
 module.exports = Promise.coroutine(function* () {
 	let conf = yield fs.readFileAsync('./spectre.json').then(JSON.parse)
+
     let p = yield Promise.join(
         sp.list(conf.lists),
         movie.scan(conf.dlDir)
     )
 
     // Gief destructuring p10x
-    let toDownload = _.difference(p[0], p[1])
+    let missing = _.difference(p[0], p[1])
     let locallyAvailable = _.intersection(p[0], p[1])
 
     _.each(locallyAvailable, mov => {
         debug('title "%s" is already downloaded', mov)
     })
 
-	if (!toDownload.length) {
+	if (!missing.length) {
 		debug('no movies to be downloaded')
 		return []
 	}
 
-    debug('downloading the following titles: %s', _.join(toDownload, ', '))
+    debug('downloading the following titles: %s', _.join(missing, ', '))
     return new Promise(function (resolve, reject) {
         // resolve will be called when all titles are downloaded
-        async.mapLimit(toDownload,
+        async.mapLimit(missing,
 			conf.concurrency,
 			_.partial(processTitle, conf),
 			_.rearg(resolve, 1, 0))

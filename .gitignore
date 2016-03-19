@@ -5,4 +5,4 @@ H
 node_modules/
 .movies
 movies/
-spectre.json
+spectre.json*
