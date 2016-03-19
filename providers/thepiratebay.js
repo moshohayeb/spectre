@@ -53,7 +53,6 @@ let __buildURL = function (opts) {
 
 module.exports = Promise.coroutine(function* (title) {
     debug('searching for: %s', title)
-    let titleKebab = _.kebabCase(title)
     let pages = _.range(PAGE_MAX)
     let host = yield __resolveHost()
 
@@ -88,33 +87,12 @@ module.exports = Promise.coroutine(function* (title) {
                 }) // getAsync then
         }, { concurrency: 2 }) // Promise Map
 
-    let torrents = Array.prototype.concat.apply([], result)
-    // TODO: Better selection strategy
-    let torrent =
-        _.chain(torrents)
-        .compact()
-        .filter(t => {
-            // execlude err results
-            let kebab = _.kebabCase(t.name)
-            return _.includes(kebab, titleKebab)
-        })
-        .filter(t => {
-            // execlude 3D
-            let name = t.name.toLowerCase()
-            let _3d = _.includes(name, '3d')
-            return !_3d
-        })
-        .orderBy(t => {
-            return (+title.seeds + +title.peers) / 2
-        }, 'desc')
-        .first()
-        .value()
-
-    if (!torrents) {
+    result = _.flatten(result)
+    if (!result) {
         debug('no match found for: "%s"', title)
     } else {
-        debug('found %d results for: "%s"', torrents.length, title)
+        debug('found %d results for: "%s"', result.length, title)
     }
 
-    return torrent
+    return result
 })

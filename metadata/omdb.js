@@ -22,7 +22,7 @@ let __buildURL = function (title) {
 }
 
 module.exports = Promise.coroutine(function* (title) {
-    debug('retriving meta information for %s', title)
+    debug('retriving meta information for "%s"', title)
     let url = __buildURL(title)
     let response = yield GET(url)
     let data = JSON.parse(response.body)

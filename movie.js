@@ -2,12 +2,9 @@
 
 let path = require('path')
 let fs = require('fs-extra')
-
 let fileType = require('file-type');
 let readChunk = require('read-chunk');
-
 let mkdirp = require('mkdirp')
-
 let debug = require('debug')('spectre:movie')
 
 let DIR_REGEX = /^.+ \(\d{2,4}\)$/

@@ -4,8 +4,11 @@ let fs = require('fs-extra')
 let async = require('async')
 let debug = require('debug')('spectre:spectre')
 
-let Movie = require('./movie')
-let Subtitle = require('./subtitle')
+let moment = require('moment')
+
+let movie = require('./movie')
+let subtitle = require('./subtitle')
+let selector = require('./selector')
 
 // Should be generated based on config
 let sp = {
@@ -17,7 +20,8 @@ let sp = {
 
 let processTitle = function (conf, title, done) {
 
-    debug('Processing title: "%s"', title)
+    debug('processing title: "%s"', title)
+	let retval = { title }
 
     let co = Promise.coroutine(function* () {
         let p = yield Promise.join(
@@ -26,16 +30,24 @@ let processTitle = function (conf, title, done) {
         )
 
         // TODO: profiles for results (720/1080)
-        let torrent = p[0]
+        let torrents = p[0]
         let metadata = p[1]
 
-        if (!torrent || !metadata) {
-            throw new Error('No torrent or meta info')
+        if (!torrents || !metadata) {
+            throw new Error('no torrents or meta info')
         }
 
         if (metadata.type !== 'movie') {
-            throw new Error('Title is not a movie')
+            throw new Error('title is not a movie')
         }
+
+		let torrent = selector(title, torrents)
+
+		let today = moment()
+		let dvddate = moment(metadata.dvd, "DD MMM YYYY");
+		if (dvddate.isAfter(today)) {
+			throw new Error ('not been released as dvd yet')
+		}
 
         // download the movie
         // TODO handling failures/no seeds?
@@ -43,28 +55,27 @@ let processTitle = function (conf, title, done) {
         let dlResult = yield sp.client(torrent, conf)
 
         // TODO: better logic for determining the actual video (compressed?)
-        let movie = Movie.detect(dlResult.files)
+        let mov = movie.detect(dlResult.files)
 
         let info = {
-            movie,
+            movie: mov,
             metadata,
             torrent
         }
 
         // rename and persist and the movie
-        yield Movie.persist(info, conf)
-        yield Subtitle.download(info, conf)
+        yield movie.persist(info, conf)
+        yield subtitle.download(info, conf)
     })
 
-	let retval = { title }
     co()
         .then(result => {
 			retval.done = true
-            debug('Title "%s" downloaded successfully', title)
+            debug('title "%s" downloaded successfully', title)
         })
         .catch(err => {
 			retval.done = false
-            debug('Err downloading title: "%s" (%s)', title, err)
+            debug('skip downloading title: "%s" (%s)', title, err.message)
         })
         .finally(() => {
 			done(null, retval)
@@ -75,7 +86,7 @@ module.exports = Promise.coroutine(function* () {
 	let conf = yield fs.readFileAsync('./spectre.json').then(JSON.parse)
     let p = yield Promise.join(
         sp.list(conf.lists),
-        Movie.scan(conf.dlDir)
+        movie.scan(conf.dlDir)
     )
 
     // Gief destructuring p10x
@@ -83,15 +94,15 @@ module.exports = Promise.coroutine(function* () {
     let locallyAvailable = _.intersection(p[0], p[1])
 
     _.each(locallyAvailable, mov => {
-        debug('Title "%s" is already downloaded', mov)
+        debug('title "%s" is already downloaded', mov)
     })
 
 	if (!toDownload.length) {
-		debug('No movies to be downloaded')
+		debug('no movies to be downloaded')
 		return []
 	}
 
-    debug('Downloading the following titles: %s', _.join(toDownload, ', '))
+    debug('downloading the following titles: %s', _.join(toDownload, ', '))
     return new Promise(function (resolve, reject) {
         // resolve will be called when all titles are downloaded
         async.mapLimit(toDownload,
