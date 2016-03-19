@@ -14,14 +14,35 @@ let selector = require('./selector')
 let sp = {
     list: require('./list'),
     client: require('./downloaders/cli'),
-    search: require('./providers/thepiratebay'),
+    search: require('./providers/kickass'),
     metadata: require('./metadata')
 }
 
-let processTitle = function (conf, title, done) {
+let initialized
+let dlQueue
+
+let recinit = function (conf) {
+	if (!initialized) {
+		dlQueue = async.queue(processTitle, conf.concurrency)
+		let report = setInterval(() => {
+			let running = dlQueue.running()
+			let waiting = dlQueue.length()
+			debug('running: %d, waiting: %d', running, waiting)
+		}, 60 * 1000)
+		initialized = true
+	} else {
+		// dynamically change concurrency
+		dlQueue.concurrency = conf.concurrency
+	}
+}
+
+let processTitle = function (job, done) {
+
+	let title = job.title
+	let conf = job.conf
+	let retval = { title }
 
     debug('processing title: "%s"', title)
-	let retval = { title }
 
     let co = Promise.coroutine(function* () {
         let p = yield Promise.join(
@@ -87,7 +108,9 @@ let processTitle = function (conf, title, done) {
 }
 
 module.exports = Promise.coroutine(function* () {
+
 	let conf = yield fs.readFileAsync('./spectre.json').then(JSON.parse)
+	recinit(conf)
 
     let p = yield Promise.join(
         sp.list(conf.lists),
@@ -104,15 +127,14 @@ module.exports = Promise.coroutine(function* () {
 
 	if (!missing.length) {
 		debug('no movies to be downloaded')
-		return []
+		return
 	}
 
-    debug('downloading the following titles: %s', _.join(missing, ', '))
-    return new Promise(function (resolve, reject) {
-        // resolve will be called when all titles are downloaded
-        async.mapLimit(missing,
-			conf.concurrency,
-			_.partial(processTitle, conf),
-			_.rearg(resolve, 1, 0))
-    })
+	let inQueue = _.map(dlQueue.tasks, 'data.title')
+	let processing = _.map(dlQueue.workersList(), 'data.title')
+	let inProgress = _.union(inQueue, processing)
+	let toAdd = _.difference(missing, inProgress)
+
+    debug('adding the following titles to the queue: %s', _.join(toAdd, ', '))
+	_.each(toAdd, title => { dlQueue.push({ conf, title }) })
 })
