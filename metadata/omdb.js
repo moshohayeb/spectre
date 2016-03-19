@@ -22,8 +22,8 @@ let __buildURL = function (title) {
 }
 
 module.exports = Promise.coroutine(function* (title) {
-    debug('retriving meta information for "%s"', title)
     let url = __buildURL(title)
+    debug('getting meta for for "%s": %s', title, url)
     let response = yield GET(url)
     let data = JSON.parse(response.body)
     return _.mapKeys(data, (v, k) => {

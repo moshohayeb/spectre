@@ -42,6 +42,9 @@ let processTitle = function (conf, title, done) {
         }
 
 		let torrent = selector(title, torrents)
+        if (!torrent) {
+			throw new Error ('no appropriate release found')
+        }
 
 		let today = moment()
 		let dvddate = moment(metadata.dvd, "DD MMM YYYY");

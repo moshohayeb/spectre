@@ -28,5 +28,5 @@ let getlist = Promise.coroutine(function* (list) {
 module.exports = Promise.coroutine(function* (lists) {
 	let p = _.map(lists, getlist)
 	let results = yield Promise.all(p)
-	return _.flatten(results)
+	return _(results).flatten().uniq().value()
 })
