@@ -17,7 +17,7 @@
 			"password": ""
 		}
 	},
-	"concurrency": 3,
+	"concurrency": 5,
 	"dlDir": "/Users/moshohayeb/Movies",
 	"tmpDir": "/tmp/spectre/"
 }

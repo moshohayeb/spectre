@@ -5,9 +5,7 @@ let spectre = require('./spectre')
 
 function boot() {
     let sleepMinutes = 5
-    // let sleep = (1000 * 60) * sleepMinutes
-    // let sleep = (1000 * 60) * sleepMinutes
-    let sleep = 1000 * 30
+    let sleep = (1000 * 60) * sleepMinutes
     spectre()
     .then(result => {
         ;

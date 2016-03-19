@@ -18,24 +18,6 @@ let sp = {
     metadata: require('./metadata')
 }
 
-let initialized
-let dlQueue
-
-let recinit = function (conf) {
-	if (!initialized) {
-		dlQueue = async.queue(processTitle, conf.concurrency)
-		let report = setInterval(() => {
-			let running = dlQueue.running()
-			let waiting = dlQueue.length()
-			debug('running: %d, waiting: %d', running, waiting)
-		}, 60 * 1000)
-		initialized = true
-	} else {
-		// dynamically change concurrency
-		dlQueue.concurrency = conf.concurrency
-	}
-}
-
 let processTitle = function (job, done) {
 
 	let title = job.title
@@ -107,10 +89,49 @@ let processTitle = function (job, done) {
 		})
 }
 
+
+let spectre = (function () {
+	let spt = { }
+	let dlQueue
+	let report
+	let conf
+
+	conf = { concurrency: 1 }
+	dlQueue = async.queue(processTitle, conf.concurrency)
+
+	report = setInterval(() => {
+		let running = dlQueue.running()
+		let waiting = dlQueue.length()
+		debug('running: %d, waiting: %d', running, waiting)
+	}, 60 * 1000)
+
+	spt.enqueue = function (title) {
+		dlQueue.push({ conf, title })
+	}
+
+	spt.configure = function (cnf) {
+	    conf = cnf
+		if (dlQueue.concurrency !== conf.concurrency) {
+			dlQueue.concurrency = conf.concurrency
+			dlQueue.pause()
+			dlQueue.resume()
+		}
+	}
+
+	spt.inQueue = function () {
+		let waiting = _.map(dlQueue.tasks, 'data.title')
+		let working = _.map(dlQueue.workersList(), 'data.title')
+		return _.union(waiting, working)
+	}
+
+	return spt
+}())
+
+
 module.exports = Promise.coroutine(function* () {
 
 	let conf = yield fs.readFileAsync('./spectre.json').then(JSON.parse)
-	recinit(conf)
+	spectre.configure(conf)
 
     let p = yield Promise.join(
         sp.list(conf.lists),
@@ -130,11 +151,9 @@ module.exports = Promise.coroutine(function* () {
 		return
 	}
 
-	let inQueue = _.map(dlQueue.tasks, 'data.title')
-	let processing = _.map(dlQueue.workersList(), 'data.title')
-	let inProgress = _.union(inQueue, processing)
-	let toAdd = _.difference(missing, inProgress)
+	let inQueue = spectre.inQueue()
+	let toAdd = _.difference(missing, inQueue)
 
     debug('adding the following titles to the queue: %s', _.join(toAdd, ', '))
-	_.each(toAdd, title => { dlQueue.push({ conf, title }) })
+	_.each(toAdd, spectre.enqueue)
 })
