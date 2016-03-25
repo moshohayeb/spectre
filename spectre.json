@@ -6,7 +6,7 @@
 		}
 	},
 	"lists": [
-		"http://www.imdb.com/list/ls036922884/",
+		"http://www.imdb.com/list/ls036922884/"
 	],
 	"subtitles": {
 		"language": "ar",
@@ -16,7 +16,7 @@
 		}
 	},
     "dlOptions": {
-        "onlyCrediable": true,
+        "onlyCrediable": false,
         "dvd": false,
         "minScore": 50,
         "minSize": 0.7,
