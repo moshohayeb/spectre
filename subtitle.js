@@ -21,7 +21,6 @@ let download = Promise.coroutine(function* (info, conf) {
         limit: 10
     })
 
-    // TODO: Better way of picking subtitles
     let url = _.get(result, 'en[0].url') || _.get(result, 'en.url')
     return wget(url, subPath)
 })
