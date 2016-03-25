@@ -22,3 +22,17 @@ exports.torrentToMagnet = function (torrentBuf) {
 exports.isAscii = function(str) {
     return /^[\x00-\x7F]*$/.test(str);
 }
+
+exports.resolveHost = function (url) {
+    return request.getAsync(url).then(rs => rs.request.uri.host)
+}
+
+exports.findQuality = function (title) {
+    let re =  /480|720|1080/
+    let result = re.exec(title)
+    if (result === null) {
+        return '480p'
+    }
+
+    return result[0] + 'p'
+}

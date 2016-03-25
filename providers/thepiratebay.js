@@ -5,9 +5,11 @@ let util = require('util')
 
 let moment = require('moment')
 let cheerio = require('cheerio')
-let prettybyte = require('pretty-bytes')
 let request = require('request')
 let debug = require('debug')('spectre:thepiratebay')
+
+let resolveHost = require('../helpers').resolveHost
+let findQuality = require('../helpers').findQuality
 
 const DIRECT_URL = 'http://thepiratebay.se'
 const SEARCH_URL = 'http://%s/search/%s/%d/99/%s/'
@@ -19,11 +21,6 @@ const QUALITY = {
     201: '480p',
     202: '1080p',
     207: '720p',
-}
-
-let __resolveHost = function () {
-    return request.getAsync(DIRECT_URL)
-        .then(rs => rs.request.uri.host)
 }
 
 let __toByte = function (human) {
@@ -53,46 +50,40 @@ let __buildURL = function (opts) {
 
 module.exports = Promise.coroutine(function* (title) {
     debug('searching for: %s', title)
+
     let pages = _.range(PAGE_MAX)
-    let host = yield __resolveHost()
-
+    let host = yield resolveHost(DIRECT_URL)
     let result = yield Promise.map(pages, page => {
-            let url = __buildURL({ title, host, page })
-            debug('getting url: %s', url)
-            return request.getAsync(url).then(rs => {
-                    let $ = cheerio.load(rs.body)
-                    let partial = _.map($('#searchResult tr'), title => {
-                        let name = $('div.detName > a', title).text()
-                        if (!name) return null
-                        let quality = _.last($('td.vertTh > center > a:nth-child(3)').attr('href').split('/'))
-                        let seeds = $('td:nth-child(3)', title).text()
-                        let peers = $('td:nth-child(4)', title).text()
-                        let freeleech = true
-                        let age = __toDay(DATE_REGEX.exec($('.detDesc', title).text())[1] || '12-12 2000')
-                        let size = __toByte(SIZE_REGEX.exec($('.detDesc', title).text())[1] || '0 GiB')
-                        let magnet = $('td:nth-child(2) > a:nth-child(2)', title).attr('href')
-                        return {
-                            name,
-                            age,
-                            size,
-                            seeds,
-                            peers,
-                            freeleech,
-                            magnet,
-                            quality: QUALITY[quality] || '480p'
-                        }
-                    })
+        let url = __buildURL({ title, host, page })
+        debug('getting url: %s', url)
+        return request.getAsync(url).then(rs => {
+            let $ = cheerio.load(rs.body)
+            let partial = _.map($('#searchResult tr'), title => {
+                let name = $('div.detName > a', title).text()
+                if (!name) return null
+                let seeds = $('td:nth-child(3)', title).text()
+                let peers = $('td:nth-child(4)', title).text()
+                let freeleech = true
+                let age = __toDay(DATE_REGEX.exec($('.detDesc', title).text())[1] || '12-12 2000')
+                let size = __toByte(SIZE_REGEX.exec($('.detDesc', title).text())[1] || '0 GiB')
+                let magnet = $('td:nth-child(2) > a:nth-child(2)', title).attr('href')
+                let quality = _.last($('td.vertTh > center > a:nth-child(3)').attr('href').split('/'))
+                return {
+                    provider: 'thepiratebay',
+                    name,
+                    age,
+                    size,
+                    seeds,
+                    peers,
+                    freeleech,
+                    magnet,
+                    quality: QUALITY[quality] || findQuality(name)
+                }
+            })
 
-                    return partial
-                }) // getAsync then
-        }, { concurrency: 2 }) // Promise Map
+            return partial
+        }) // getAsync then
+    }, { concurrency: 2 }) // Promise Map
 
-    result = _.flatten(result)
-    if (!result) {
-        debug('no match found for: "%s"', title)
-    } else {
-        debug('found %d results for: "%s"', result.length, title)
-    }
-
-    return result
+    return _.flatten(result)
 })

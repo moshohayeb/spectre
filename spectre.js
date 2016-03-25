@@ -2,19 +2,24 @@
 
 let fs = require('fs-extra')
 let async = require('async')
-let debug = require('debug')('spectre:spectre')
 
-let moment = require('moment')
+let debug = require('debug')('spectre:spectre')
+let log = require('npmlog')
 
 let movie = require('./movie')
 let subtitle = require('./subtitle')
 let selector = require('./selector')
 
 // Should be generated based on config
+
+
 let sp = {
     list: require('./list'),
     client: require('./downloaders/cli'),
-    search: require('./providers/kickass'),
+    providers: [
+        require('./providers/kickass'),
+        // require('./providers/thepiratebay')
+    ],
     metadata: require('./metadata')
 }
 
@@ -27,34 +32,24 @@ let processTitle = function (job, done) {
     debug('processing title: "%s"', title)
 
     let co = Promise.coroutine(function* () {
-        let p = yield Promise.join(
-            sp.search(title),
-            sp.metadata(title)
-        )
 
-        // TODO: profiles for results (720/1080)
-        let torrents = p[0]
-        let metadata = p[1]
+        let metaPromise = sp.metadata(title)
+        let torrentPromise = Promise.map(sp.providers, provider => provider(title))
 
-        if (!metadata) {
+        let p = yield Promise.all([metaPromise, torrentPromise])
+
+        let metadata = p[0]
+        let torrents = _.flatten(p[1])
+
+        if (!metadata || metadata.type !== 'movie') {
             throw new Error('meta data could not be retrieved')
         }
 
-        if (metadata.type !== 'movie') {
-            throw new Error('title is not a movie')
-        }
-
-		let torrent = selector(title, torrents)
+        debug('found %d results for "%s"', torrents.length, title)
+		let torrent = selector(title, torrents, conf.dlOptions)
         if (!torrent) {
-			/* TODO: Possibly fallback on best guess */
 			throw new Error ('no appropriate release found')
         }
-
-		let today = moment()
-		let dvddate = moment(metadata.dvd, "DD MMM YYYY");
-		if (dvddate.isAfter(today)) {
-			throw new Error ('not been released as dvd yet')
-		}
 
         // download the movie
         // TODO handling failures/no seeds?
@@ -81,6 +76,7 @@ let processTitle = function (job, done) {
             debug('title "%s" downloaded successfully', title)
         })
         .catch(err => {
+            console.log(err)
 			retval.done = false
             debug('skip downloading title: "%s" (%s)', title, err.message)
         })
@@ -111,6 +107,18 @@ let spectre = (function () {
 
 	spt.configure = function (cnf) {
 	    conf = cnf
+
+        conf.dlOptions = conf.dlOptions || { }
+        conf.dlOptions.minSize = conf.dlOptions.minSize || 0.7
+        conf.dlOptions.maxSize = conf.dlOptions.maxSize || 4.7
+        conf.dlOptions.minSize *= 1000000000
+        conf.dlOptions.maxSize *= 1000000000
+
+        conf.dlOptions.minScore = conf.dlOptions.minScore || 0
+        conf.dlOptions.onlyCrediable = conf.dlOptions.onlyCrediable === undefined ?
+                                                    false : Boolean(conf.dlOptions.onlyCrediable)
+        conf.dlOptions.dvd = conf.dlOptions.dvd === undefined ? false : Boolean(conf.dlOptions.dvd)
+
 		if (dlQueue.concurrency !== conf.concurrency) {
 			dlQueue.concurrency = conf.concurrency
 			dlQueue.pause()
@@ -153,6 +161,8 @@ module.exports = Promise.coroutine(function* () {
 
 	let inQueue = spectre.inQueue()
 	let toAdd = _.difference(missing, inQueue)
+
+    toAdd = _.shuffle(toAdd)
 
     debug('adding the following titles to the queue: %s', _.join(toAdd, ', '))
 	_.each(toAdd, spectre.enqueue)

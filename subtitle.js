@@ -4,7 +4,7 @@ let OpenSubtitles = require('opensubtitles-api');
 
 let path = require('path')
 let debug = require('debug')('spectre:subtitle')
-let util = require('./util')
+let wget = require('./helpers').wget
 
 let download = Promise.coroutine(function* (info, conf) {
     let os = new OpenSubtitles({ useragent: 'OSTestUserAgent' })
@@ -23,7 +23,7 @@ let download = Promise.coroutine(function* (info, conf) {
 
     // TODO: Better way of picking subtitles
     let url = _.get(result, 'en[0].url') || _.get(result, 'en.url')
-    return util.wget(url, subPath)
+    return wget(url, subPath)
 })
 
 module.exports = {

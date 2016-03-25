@@ -17,7 +17,16 @@
 			"password": ""
 		}
 	},
-	"concurrency": 5,
-	"dlDir": "/Users/moshohayeb/Movies",
+    "limits": {
+    },
+    "dlOptions": {
+        "onlyCrediable": false,
+        "dvd": false,
+        "minScore": 70,
+        "minSize": 0.7,
+        "maxSize": 4.7
+    },
+	"concurrency": 2,
+	"dlDir": "/Volumes/MOHD2/Watchlist/",
 	"tmpDir": "/tmp/spectre/"
 }
