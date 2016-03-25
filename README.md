@@ -11,15 +11,12 @@ I am using quite a few ES6 features so I am not sure which is the minimal requir
 git clone https://github.com/moshohayeb/spectre.git
 cd spectre
 npm install
-DEBUG=
+DEBUG=spectre:* node index.js
  ```
  Minimal Configuration in spectre.json
 - Add your lists in the lists array
-- Edit tmpDir and dlDir
+- Ensure tmpDir and dlDir exists and writable
 
-```
-DEBUG=spectre:* node index.js
-```
 
 ## Watchlists
 Currently only IDMB lists are supported (watchlist and normal lists).
