@@ -16,9 +16,9 @@
 		}
 	},
     "dlOptions": {
-        "onlyCrediable": false,
+        "onlyCrediable": true,
         "dvd": false,
-        "minScore": 70,
+        "minScore": 50,
         "minSize": 0.7,
         "maxSize": 4.7
     },

@@ -11,6 +11,7 @@ I am using quite a few ES6 features so I am not sure which is the minimal requir
 git clone https://github.com/moshohayeb/spectre.git
 cd spectre
 npm install
+DEBUG=
  ```
  Minimal Configuration in spectre.json
 - Add your lists in the lists array

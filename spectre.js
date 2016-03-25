@@ -4,7 +4,6 @@ let fs = require('fs-extra')
 let async = require('async')
 
 let debug = require('debug')('spectre:spectre')
-let log = require('npmlog')
 
 let movie = require('./movie')
 let subtitle = require('./subtitle')
