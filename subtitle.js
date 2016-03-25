@@ -19,7 +19,7 @@ let download = Promise.coroutine(function* (info, conf) {
         imdbid: info.metadata.imdbId,
         filename: info.movie.oldName,
         limit: 10
-    })
+        })
 
     let url = _.get(result, 'en[0].url') || _.get(result, 'en.url')
     return wget(url, subPath)

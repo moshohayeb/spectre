@@ -87,22 +87,22 @@ module.exports = function (title, torrents, options) {
 	}
 
 	let wrapper = function (fn) {
-	    return partial(fn, _, ctx)
+		return partial(fn, _, ctx)
 	}
 
     let torrent =
-        _.chain(torrents)
-        .compact()
-        .filter(wrapper(includeName))
-        .filter(wrapper(execludeKeywords))
-        .filter(wrapper(ensureAscii))
-        .filter(wrapper(crediable))
-        .filter(wrapper(sizecCheck))
+		_.chain(torrents)
+		.compact()
+		.filter(wrapper(includeName))
+		.filter(wrapper(execludeKeywords))
+		.filter(wrapper(ensureAscii))
+		.filter(wrapper(crediable))
+		.filter(wrapper(sizecCheck))
 		/* Add more filters here*/
 		.each(computeScore)
-        .orderBy('score', 'desc')
-        .first()
-        .value()
+		.orderBy('score', 'desc')
+		.first()
+		.value()
 
 	if (!torrent) return null
 	if (options.minScore && torrent.score < torrent.score) return null

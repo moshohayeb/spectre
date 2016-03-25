@@ -10,8 +10,6 @@ let subtitle = require('./subtitle')
 let selector = require('./selector')
 
 // Should be generated based on config
-
-
 let sp = {
     list: require('./list'),
     client: require('./downloaders/cli'),
@@ -24,9 +22,9 @@ let sp = {
 
 let processTitle = function (job, done) {
 
-	let title = job.title
-	let conf = job.conf
-	let retval = { title }
+    let title = job.title
+    let conf = job.conf
+    let retval = { title }
 
     debug('processing title: "%s"', title)
 
@@ -45,9 +43,9 @@ let processTitle = function (job, done) {
         }
 
         debug('found %d results for "%s"', torrents.length, title)
-		let torrent = selector(title, torrents, conf.dlOptions)
+        let torrent = selector(title, torrents, conf.dlOptions)
         if (!torrent) {
-			throw new Error ('no appropriate release found')
+            throw new Error ('no appropriate release found')
         }
 
         // download the movie
@@ -71,41 +69,41 @@ let processTitle = function (job, done) {
 
     co()
         .then(result => {
-			retval.done = true
+            retval.done = true
             debug('title "%s" downloaded successfully', title)
         })
         .catch(err => {
             console.log(err)
-			retval.done = false
+            retval.done = false
             debug('skip downloading title: "%s" (%s)', title, err.message)
         })
         .finally(() => {
-			done(null, retval)
-		})
+            done(null, retval)
+        })
 }
 
 
 let spectre = (function () {
-	let spt = { }
-	let dlQueue
-	let report
-	let conf
+    let spt = { }
+    let dlQueue
+    let report
+    let conf
 
-	conf = { concurrency: 1 }
-	dlQueue = async.queue(processTitle, conf.concurrency)
+    conf = { concurrency: 1 }
+    dlQueue = async.queue(processTitle, conf.concurrency)
 
-	report = setInterval(() => {
-		let running = dlQueue.running()
-		let waiting = dlQueue.length()
-		debug('running: %d, waiting: %d', running, waiting)
-	}, 60 * 1000)
+    report = setInterval(() => {
+        let running = dlQueue.running()
+        let waiting = dlQueue.length()
+        debug('running: %d, waiting: %d', running, waiting)
+    }, 60 * 1000)
 
-	spt.enqueue = function (title) {
-		dlQueue.push({ conf, title })
-	}
+    spt.enqueue = function (title) {
+        dlQueue.push({ conf, title })
+    }
 
-	spt.configure = function (cnf) {
-	    conf = cnf
+    spt.configure = function (cnf) {
+        conf = cnf
 
         conf.dlOptions = conf.dlOptions || { }
         conf.dlOptions.minSize = conf.dlOptions.minSize || 0.7
@@ -115,30 +113,30 @@ let spectre = (function () {
 
         conf.dlOptions.minScore = conf.dlOptions.minScore || 0
         conf.dlOptions.onlyCrediable = conf.dlOptions.onlyCrediable === undefined ?
-                                                    false : Boolean(conf.dlOptions.onlyCrediable)
+                false : Boolean(conf.dlOptions.onlyCrediable)
         conf.dlOptions.dvd = conf.dlOptions.dvd === undefined ? false : Boolean(conf.dlOptions.dvd)
 
-		if (dlQueue.concurrency !== conf.concurrency) {
-			dlQueue.concurrency = conf.concurrency
-			dlQueue.pause()
-			dlQueue.resume()
-		}
-	}
+        if (dlQueue.concurrency !== conf.concurrency) {
+            dlQueue.concurrency = conf.concurrency
+            dlQueue.pause()
+            dlQueue.resume()
+        }
+    }
 
-	spt.inQueue = function () {
-		let waiting = _.map(dlQueue.tasks, 'data.title')
-		let working = _.map(dlQueue.workersList(), 'data.title')
-		return _.union(waiting, working)
-	}
+    spt.inQueue = function () {
+        let waiting = _.map(dlQueue.tasks, 'data.title')
+        let working = _.map(dlQueue.workersList(), 'data.title')
+        return _.union(waiting, working)
+    }
 
-	return spt
+    return spt
 }())
 
 
 module.exports = Promise.coroutine(function* () {
 
-	let conf = yield fs.readFileAsync('./spectre.json').then(JSON.parse)
-	spectre.configure(conf)
+    let conf = yield fs.readFileAsync('./spectre.json').then(JSON.parse)
+    spectre.configure(conf)
 
     let p = yield Promise.join(
         sp.list(conf.lists),
@@ -153,16 +151,16 @@ module.exports = Promise.coroutine(function* () {
         debug('title "%s" is already downloaded', mov)
     })
 
-	if (!missing.length) {
-		debug('no movies to be downloaded')
-		return
-	}
+    if (!missing.length) {
+    	debug('no movies to be downloaded')
+    	return
+    }
 
-	let inQueue = spectre.inQueue()
-	let toAdd = _.difference(missing, inQueue)
+    let inQueue = spectre.inQueue()
+    let toAdd = _.difference(missing, inQueue)
 
     toAdd = _.shuffle(toAdd)
 
     debug('adding the following titles to the queue: %s', _.join(toAdd, ', '))
-	_.each(toAdd, spectre.enqueue)
+    _.each(toAdd, spectre.enqueue)
 })
