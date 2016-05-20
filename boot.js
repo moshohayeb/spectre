@@ -2,9 +2,9 @@
 
 module.exports = function () {
     /* Override native Promise implementation (or add) globally */
-    GLOBAL.Promise = require('bluebird')
-    GLOBAL._ = require('lodash')
-    GLOBAL.sprintf = require('sprintf-js').sprintf
+    global.Promise = require('bluebird')
+    global._ = require('lodash')
+    global.sprintf = require('sprintf-js').sprintf
 
     /* Promisify modules */
     Promise.promisifyAll(require('fs-extra'))
@@ -12,5 +12,5 @@ module.exports = function () {
     Promise.promisifyAll(require("mkdirp"));
 
     // For debugging purposes
-    GLOBAL.die = process.exit.bind(0)
+    global.die = process.exit.bind(0)
 }

@@ -1,13 +1,5 @@
 'use strict'
 
-// let dvd = function (torrent, ctx) {
-// 	let today = moment()
-// 	let dvddate = moment(metadata.dvd, "DD MMM YYYY");
-// 	if (dvddate.isAfter(today)) {
-// 		throw new Error ('not been released as dvd yet')
-// 	}
-// }
-
 let moment = require('moment')
 let helpers = require('./helpers')
 
@@ -46,9 +38,8 @@ let sizecCheck = function (torrent, ctx) {
     return false
 }
 
-let computeScore = function (torrent) {
+let computeScore = function (torrent, ctx) {
     let score = 0
-    let ctx = { options: { onlyCrediable: true } }
 
     // 20 point for seeds
     if (torrent.seeds > 1000) score += 20
@@ -64,17 +55,21 @@ let computeScore = function (torrent) {
     else if (_.inRange(torrent.peers, 5, 10)) score += 5
     else score += 0
 
-    // 20 points for being from a crediable uploader
-    if (crediable(torrent, ctx)) score += 20
+    // 60 points for being from a crediable uploader
+    if (crediable(torrent, ctx)) score += 60
     else score += 0
 
-    // 20 Points 20 1080p, 10 for 720p
-    if (torrent.quality == '1080p') score += 20
-    else if (torrent.quality == '720p') score += 10
+    // 30 Points 20 1080p, 15 for 720p
+    if (torrent.quality == '1080p') score += 30
+    else if (torrent.quality == '720p') score += 15
     else score += 0
 
     // Give freeleech extra
     if (torrent.freeleech) score += 10
+
+    // Give optimal size extra points
+    if (_.inRange(torrent.size, ctx.options.minPreferSize, ctx.options.maxPreferSize))
+        score += 30
 
     torrent.score = score
 }
@@ -99,8 +94,9 @@ module.exports = function (title, torrents, options) {
         .filter(wrapper(crediable))
         .filter(wrapper(sizecCheck))
         /* Add more filters here*/
-        .each(computeScore)
+        .each(wrapper(computeScore))
         .orderBy('score', 'desc')
+        .tap(console.log)
         .first()
         .value()
 

@@ -7,45 +7,47 @@ let debug = require('debug')('spectre:spectre')
 
 let movie = require('./movie')
 let subtitle = require('./subtitle')
-let selector = require('./selector')
+
+let List = require('./list')
+let Movie = require('./movie')
+let Metadata = require('./metadata')
+let Selector = require('./selector')
+
+let Providers = [
+    require('./providers/kickass'),
+    require('./providers/thepiratebay')
+]
 
 // Should be generated based on config
 let sp = {
-    list: require('./list'),
     client: require('./downloaders/cli'),
-    providers: [
-        require('./providers/kickass'),
-        // require('./providers/thepiratebay')
-    ],
-    metadata: require('./metadata')
 }
 
 let processTitle = function (job, done) {
-
     let title = job.title
     let conf = job.conf
     let retval = { title }
 
-    debug('processing title: "%s"', title)
+    debug('Processing title: "%s"', title)
 
     let co = Promise.coroutine(function* () {
 
-        let metaPromise = sp.metadata(title)
-        let torrentPromise = Promise.map(sp.providers, provider => provider(title))
+        let metaPromise = Metadata(title)
+        let torrentPromise = Promise.map(Providers, provider => provider(title))
 
         let p = yield Promise.all([metaPromise, torrentPromise])
 
         let metadata = p[0]
         let torrents = _.flatten(p[1])
 
-        if (!metadata || metadata.type !== 'movie') {
-            throw new Error('meta data could not be retrieved')
+        if (!metadata) {
+            throw new Error('Meta data could not be retrieved')
         }
 
-        debug('found %d results for "%s"', torrents.length, title)
-        let torrent = selector(title, torrents, conf.dlOptions)
+        debug('Found %d results for "%s"', torrents.length, title)
+        let torrent = Selector(title, torrents, conf.dlOptions)
         if (!torrent) {
-            throw new Error ('no appropriate release found')
+            throw new Error ('No appropriate release found')
         }
 
         // download the movie
@@ -54,7 +56,7 @@ let processTitle = function (job, done) {
         let dlResult = yield sp.client(torrent, conf)
 
         // TODO: better logic for determining the actual video (compressed?)
-        let mov = movie.detect(dlResult.files)
+        let mov = Movie.detect(dlResult.files)
 
         let info = {
             movie: mov,
@@ -63,7 +65,7 @@ let processTitle = function (job, done) {
         }
 
         // rename and persist and the movie
-        yield movie.persist(info, conf)
+        yield Movie.persist(info, conf)
         yield subtitle.download(info, conf)
     })
 
@@ -83,8 +85,8 @@ let processTitle = function (job, done) {
 }
 
 
-let spectre = (function () {
-    let spt = { }
+let Spectre = function () {
+    let spectre = { }
     let dlQueue
     let report
     let conf
@@ -98,11 +100,11 @@ let spectre = (function () {
         debug('running: %d, waiting: %d', running, waiting)
     }, 60 * 1000)
 
-    spt.enqueue = function (title) {
+    spectre.enqueue = function (title) {
         dlQueue.push({ conf, title })
     }
 
-    spt.configure = function (cnf) {
+    spectre.configure = function (cnf) {
         conf = cnf
 
         conf.dlOptions = conf.dlOptions || { }
@@ -111,10 +113,16 @@ let spectre = (function () {
         conf.dlOptions.minSize *= 1000000000
         conf.dlOptions.maxSize *= 1000000000
 
+        conf.dlOptions.minPreferSize = conf.dlOptions.minPreferSize || 0.7
+        conf.dlOptions.maxPreferSize = conf.dlOptions.maxPreferSize || 4.7
+        conf.dlOptions.minPreferSize *= 1000000000
+        conf.dlOptions.maxPreferSize *= 1000000000
+
         conf.dlOptions.minScore = conf.dlOptions.minScore || 0
         conf.dlOptions.onlyCrediable = conf.dlOptions.onlyCrediable === undefined ?
                 false : Boolean(conf.dlOptions.onlyCrediable)
-        conf.dlOptions.dvd = conf.dlOptions.dvd === undefined ? false : Boolean(conf.dlOptions.dvd)
+        conf.dlOptions.dvd = conf.dlOptions.dvd === undefined ?
+                false : Boolean(conf.dlOptions.dvd)
 
         if (dlQueue.concurrency !== conf.concurrency) {
             dlQueue.concurrency = conf.concurrency
@@ -123,44 +131,42 @@ let spectre = (function () {
         }
     }
 
-    spt.inQueue = function () {
+    spectre.inQueue = function () {
         let waiting = _.map(dlQueue.tasks, 'data.title')
         let working = _.map(dlQueue.workersList(), 'data.title')
         return _.union(waiting, working)
     }
 
-    return spt
-}())
+    return spectre
+}
 
 
 module.exports = Promise.coroutine(function* () {
+    let spectre = Spectre()
 
     let conf = yield fs.readFileAsync('./spectre.json').then(JSON.parse)
     spectre.configure(conf)
 
     let p = yield Promise.join(
-        sp.list(conf.lists),
-        movie.scan(conf.dlDir)
+        List(conf.lists),
+        Movie.scan(conf.dlDir)
     )
 
-    // Gief destructuring p10x
-    let missing = _.difference(p[0], p[1])
-    let locallyAvailable = _.intersection(p[0], p[1])
+    let missing = _.difference(...p)
+    let locallyAvailable = _.intersection(...p)
 
     _.each(locallyAvailable, mov => {
-        debug('title "%s" is already downloaded', mov)
+        debug('Title "%s" is already downloaded', mov)
     })
 
     if (!missing.length) {
-    	debug('no movies to be downloaded')
+    	debug('No movies to be downloaded')
     	return
     }
 
     let inQueue = spectre.inQueue()
-    let toAdd = _.difference(missing, inQueue)
+    let toAdd = _.shuffle(_.difference(missing, inQueue))
 
-    toAdd = _.shuffle(toAdd)
-
-    debug('adding the following titles to the queue: %s', _.join(toAdd, ', '))
+    debug('Adding the following titles to the queue: %s', _.join(toAdd, ', '))
     _.each(toAdd, spectre.enqueue)
 })

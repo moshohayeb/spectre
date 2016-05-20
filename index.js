@@ -3,9 +3,10 @@
 require('./boot')()
 let spectre = require('./spectre')
 
-function boot() {
+function iter() {
     let sleepMinutes = 5
     let sleep = (1000 * 60) * sleepMinutes
+
     spectre()
         .then(result => {
             ;
@@ -18,7 +19,9 @@ function boot() {
         })
         .finally(result => {
             console.log('finished probing, will recheck in %d minutes', sleepMinutes)
-            setTimeout(boot, sleep)
+            setTimeout(iter, sleep)
         })
 }
-boot()
+
+
+iter()

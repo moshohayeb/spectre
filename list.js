@@ -5,7 +5,7 @@ let request = require('request')
 
 let urljoin = require('url-join')
 
-let getlist = Promise.coroutine(function* (list) {
+let fetchList = Promise.coroutine(function* (list) {
     let rs = yield request.getAsync(list)
     let $ = cheerio.load(rs.body)
     let titles = []
@@ -26,7 +26,7 @@ let getlist = Promise.coroutine(function* (list) {
 })
 
 module.exports = Promise.coroutine(function* (lists) {
-    let p = _.map(lists, getlist)
+    let p = _.map(lists, fetchList)
     let results = yield Promise.all(p)
     return _(results).flatten().uniq().value()
 })

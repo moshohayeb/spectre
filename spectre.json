@@ -6,7 +6,7 @@
 		}
 	},
 	"lists": [
-		"http://www.imdb.com/list/ls036922884/"
+        "http://www.imdb.com/list/ls036922884/"
 	],
 	"subtitles": {
 		"language": "ar",
@@ -20,9 +20,11 @@
         "dvd": false,
         "minScore": 50,
         "minSize": 0.7,
-        "maxSize": 4.7
+        "maxSize": 4.7,
+        "minPreferSize": 2.0,
+        "maxPreferSize": 4.0 
     },
-	"concurrency": 2,
-	"dlDir": "/Volumes/MOHD2/Watchlist/",
+	"concurrency": 4,
+	"dlDir": "../Watchlist/",
 	"tmpDir": "/tmp/spectre/"
 }

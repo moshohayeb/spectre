@@ -6,8 +6,6 @@ let request = require('request')
 let qs = require('querystring')
 let debug = require('debug')('spectre:metadata')
 
-let GET = Promise.promisify(request.get)
-
 const URL = 'http://www.omdbapi.com/'
 
 let __buildURL = function (title) {
@@ -23,11 +21,9 @@ let __buildURL = function (title) {
 
 module.exports = Promise.coroutine(function* (title) {
     let url = __buildURL(title)
-    debug('getting meta data for title: %s', title)
-    debug('getting url: %s', url)
-    let response = yield GET(url)
+    debug('Getting meta data for title: %s', title)
+    debug('Getting url: %s', url)
+    let response = yield request.getAsync(url)
     let data = JSON.parse(response.body)
-    return _.mapKeys(data, (v, k) => {
-        return _.camelCase(k)
-    })
+    return _.mapKeys(data, (v, k) => { return _.camelCase(k) })
 })

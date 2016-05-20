@@ -16,7 +16,7 @@ const SEARCH_URL = 'http://%s/search/%s/%d/99/%s/'
 
 const DATE_REGEX = /Uploaded ([^,]+),/
 const SIZE_REGEX = /Size ([^,]+),/
-const PAGE_MAX = 1
+const PAGE_MAX = 3
 const QUALITY = {
     201: '480p',
     202: '1080p',
@@ -49,13 +49,13 @@ let __buildURL = function (opts) {
 }
 
 module.exports = Promise.coroutine(function* (title) {
-    debug('searching for: %s', title)
+    debug('Searching for: %s', title)
 
     let pages = _.range(PAGE_MAX)
     let host = yield resolveHost(DIRECT_URL)
     let result = yield Promise.map(pages, page => {
         let url = __buildURL({ title, host, page })
-        debug('getting url: %s', url)
+        debug('Getting url: %s', url)
         return request.getAsync(url).then(rs => {
             let $ = cheerio.load(rs.body)
             let partial = _.map($('#searchResult tr'), title => {
