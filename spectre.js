@@ -26,16 +26,15 @@ let sp = {
 let processTitle = function (job, done) {
     let title = job.title
     let conf = job.conf
-    let retval = { title }
 
     debug('Processing title: "%s"', title)
 
     let co = Promise.coroutine(function* () {
 
-        let metaPromise = Metadata(title)
-        let torrentPromise = Promise.map(Providers, provider => provider(title))
+        let pMeta = Metadata(title)
+        let pTorrent = Promise.map(Providers, provider => provider(title))
 
-        let p = yield Promise.all([metaPromise, torrentPromise])
+        let p = yield Promise.all([pMeta, pTorrent])
 
         let metadata = p[0]
         let torrents = _.flatten(p[1])
@@ -44,10 +43,10 @@ let processTitle = function (job, done) {
             throw new Error('Meta data could not be retrieved')
         }
 
-        debug('Found %d results for "%s"', torrents.length, title)
+        debug('Found %d results for title: "%s"', torrents.length, title)
         let torrent = Selector(title, torrents, conf.dlOptions)
         if (!torrent) {
-            throw new Error ('No appropriate release found')
+            throw new Error ('No release matching criteria found for title: "%s"', title)
         }
 
         // download the movie
@@ -69,6 +68,7 @@ let processTitle = function (job, done) {
         yield subtitle.download(info, conf)
     })
 
+    let retval = { title }
     co()
         .then(result => {
             retval.done = true
@@ -121,9 +121,6 @@ let Spectre = function () {
         conf.dlOptions.minScore = conf.dlOptions.minScore || 0
         conf.dlOptions.onlyCrediable = conf.dlOptions.onlyCrediable === undefined ?
                 false : Boolean(conf.dlOptions.onlyCrediable)
-        conf.dlOptions.dvd = conf.dlOptions.dvd === undefined ?
-                false : Boolean(conf.dlOptions.dvd)
-
         if (dlQueue.concurrency !== conf.concurrency) {
             dlQueue.concurrency = conf.concurrency
             dlQueue.pause()
@@ -141,14 +138,14 @@ let Spectre = function () {
 }
 
 
-module.exports = Promise.coroutine(function* () {
+module.exports = Promise.coroutine(function* (configFile) {
     let spectre = Spectre()
 
-    let conf = yield fs.readFileAsync('./spectre.json').then(JSON.parse)
+    let conf = yield fs.readFileAsync(configFile).then(JSON.parse)
     spectre.configure(conf)
 
     let p = yield Promise.join(
-        List(conf.lists),
+        List.fetch(conf.lists),
         Movie.scan(conf.dlDir)
     )
 

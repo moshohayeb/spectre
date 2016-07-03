@@ -5,28 +5,36 @@ let request = require('request')
 
 let urljoin = require('url-join')
 
-let fetchList = Promise.coroutine(function* (list) {
-    let rs = yield request.getAsync(list)
-    let $ = cheerio.load(rs.body)
-    let titles = []
-    let headers
+let fetcher = function (list) {
+    return request.getAsync(list)
+        .then(rs => {
+            let $ = cheerio.load(rs.body)
+            let titles = []
+            let headers
 
-    // main watchlist format;
-    headers = $('.list_item')
-    headers.each((idx, element) => {
-        titles.push(($('a', '.info', element).html()))
-    })
+            // main watchlist format;
+            headers = $('.list_item')
+            headers.each((idx, element) => {
+                titles.push(($('a', '.info', element).html()))
+            })
 
-    // additional lists format
-    headers = $('.lister-item-header')
-    headers.each((idx, element) => {
-        titles.push($('a', element).html())
-    })
-    return titles
-})
+            // additional lists format
+            headers = $('.lister-item-header')
+            headers.each((idx, element) => {
+                titles.push($('a', element).html())
+            })
 
-module.exports = Promise.coroutine(function* (lists) {
-    let p = _.map(lists, fetchList)
-    let results = yield Promise.all(p)
-    return _(results).flatten().uniq().value()
-})
+            return titles
+        })
+}
+
+let fetch = function (lists) {
+    return Promise.map(lists, fetcher, 4)
+        .then(results => {
+            return _(results).flatten().uniq().value()
+        })
+}
+
+module.exports = {
+    fetch
+}

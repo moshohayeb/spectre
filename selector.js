@@ -1,12 +1,14 @@
 'use strict'
 
+let debug = require('debug')('spectre:selector')
 let moment = require('moment')
+let prettybyte = require('pretty-bytes');
+
 let helpers = require('./helpers')
 
-let crediableUploaders = ['ETRG', 'YIFY', 'JYK', 'SPARKS', 'RARBG', 'ANOXMOUS', 'NVEE', 'TUGAZX', 'MKVCAGE', 'SHAANIG']
-let execludedWords = ['rus', 'russian', 'ru', '3d', 'cam']
 
-let partial = _.partial
+let crediableUploaders = ['ETRG', 'YIFY', 'JYK', 'SPARKS', 'RARBG', 'ANOXMOUS', 'NVEE', 'TUGAZX', 'MKVCAGE', 'SHAANIG']
+let execludedKw = ['rus', 'russian', 'ru', '3d', 'cam', 'hindi']
 
 let includeName = function (torrent, ctx) {
     let kebab = _.kebabCase(torrent.name)
@@ -17,7 +19,7 @@ let includeName = function (torrent, ctx) {
 let execludeKeywords = function (torrent, ctx) {
     let words = _.words(torrent.name)
     words = _.map(words, w =>  w.toLowerCase() )
-    return !_.intersection(words, execludedWords).length
+    return !_.intersection(words, execludedKw).length
 }
 
 let ensureAscii = function (torrent, ctx) {
@@ -36,6 +38,10 @@ let crediable = function (torrent, ctx) {
 let sizecCheck = function (torrent, ctx) {
     if (torrent.size <= ctx.options.maxSize && torrent.size >= ctx.options.minSize) return true
     return false
+}
+
+let removeZeroSeeds = function (torrent, ctx) {
+    return torrent.seeds != 0
 }
 
 let computeScore = function (torrent, ctx) {
@@ -81,26 +87,30 @@ module.exports = function (title, torrents, options) {
         options
     }
 
-    let wrapper = function (fn) {
-        return partial(fn, _, ctx)
+    let wrap = function (fn) {
+        return _.partial(fn, _, ctx)
     }
 
     let torrent =
         _.chain(torrents)
         .compact()
-        .filter(wrapper(includeName))
-        .filter(wrapper(execludeKeywords))
-        .filter(wrapper(ensureAscii))
-        .filter(wrapper(crediable))
-        .filter(wrapper(sizecCheck))
+        .filter(wrap(includeName))
+        .filter(wrap(execludeKeywords))
+        .filter(wrap(ensureAscii))
+        .filter(wrap(crediable))
+        .filter(wrap(sizecCheck))
+        .filter(wrap(removeZeroSeeds))
         /* Add more filters here*/
-        .each(wrapper(computeScore))
+        .each(wrap(computeScore))
         .orderBy('score', 'desc')
-        .tap(console.log)
+        // .tap(console.log)
         .first()
         .value()
 
     if (!torrent) return null
     if (options.minScore && torrent.score < torrent.score) return null
+
+    debug('Chosen torrent for title: "%s" -%s- %s:%s:%s:%s score=%s',
+        title, torrent.name, torrent.provider, torrent.seeds, torrent.peers, prettybyte(torrent.size), torrent.score)
     return torrent
 }

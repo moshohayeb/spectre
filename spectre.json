@@ -1,30 +1,31 @@
  {
-	"providers": {
-		"torrentday": {
-			"username": "",
-			"password": ""
-		}
-	},
-	"lists": [
-        "http://www.imdb.com/list/ls036922884/"
-	],
-	"subtitles": {
-		"language": "ar",
-		"openSubtitles": {
-			"username": "",
-			"password": ""
-		}
-	},
-    "dlOptions": {
-        "onlyCrediable": false,
-        "dvd": false,
-        "minScore": 50,
-        "minSize": 0.7,
-        "maxSize": 4.7,
-        "minPreferSize": 2.0,
-        "maxPreferSize": 4.0 
-    },
-	"concurrency": 4,
-	"dlDir": "../Watchlist/",
-	"tmpDir": "/tmp/spectre/"
-}
+     "providers": {
+         "torrentday": {
+             "username": "",
+             "password": ""
+         }
+     },
+     "lists": [
+         "http://www.imdb.com/list/ls036922884/",
+         "http://www.imdb.com/list/ls036788022/",
+         "http://www.imdb.com/user/ur40260900/watchlist?ref_=wt_nv_wl_all_0"
+     ],
+     "subtitles": {
+         "language": "en",
+         "openSubtitles": {
+             "username": "",
+             "password": ""
+         }
+     },
+     "dlOptions": {
+         "onlyCrediable": true,
+         "minScore": 50,
+         "minSize": 0.7,
+         "maxSize": 4.7,
+         "minPreferSize": 1.5,
+         "maxPreferSize": 3.7
+     },
+     "concurrency": 1,
+     "dlDir": "../Watchlist/",
+     "tmpDir": "/tmp/spectre/"
+ }
