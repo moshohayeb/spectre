@@ -92,4 +92,5 @@ module.exports = function (title) {
             )
         })
         .then(results => _.flatten(results) )
+        .catch(err => [ ]) /* Swallow any exceptions and just return the empty array */
 }

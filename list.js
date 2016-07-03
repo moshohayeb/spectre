@@ -3,10 +3,12 @@
 let cheerio = require('cheerio')
 let request = require('request')
 
+let url = require('url');
 let urljoin = require('url-join')
 
 let fetcher = function (list) {
-    return request.getAsync(list)
+    // Google's US IP address to prevent title translation
+    return request.getAsync(list, { headers: {'X-Forwarded-For': '64.233.160.33'}})
         .then(rs => {
             let $ = cheerio.load(rs.body)
             let titles = []
@@ -28,11 +30,9 @@ let fetcher = function (list) {
         })
 }
 
-let fetch = function (lists) {
-    return Promise.map(lists, fetcher, 4)
-        .then(results => {
-            return _(results).flatten().uniq().value()
-        })
+let fetch = function (links) {
+    return Promise.map(links, fetcher, 4)
+        .then(results => _(results).flatten().uniq().value() )
 }
 
 module.exports = {
