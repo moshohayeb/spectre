@@ -23,9 +23,8 @@ let sp = {
     client: require('./downloaders/cli'),
 }
 
-let processTitle = function (job, done) {
-    let title = job.title
-    let conf = job.conf
+let downloadTitle = function (title, done) {
+    let conf = this.conf
 
     debug('Processing title: "%s"', title)
 
@@ -39,14 +38,10 @@ let processTitle = function (job, done) {
         let metadata = p[0]
         let torrents = _.flatten(p[1])
 
-        if (!metadata) {
-            throw new Error('Meta data could not be retrieved')
-        }
-
         debug('Found %d results for title: "%s"', torrents.length, title)
         let torrent = Selector(title, torrents, conf.dlOptions)
         if (!torrent) {
-            throw new Error ('No release matching criteria found for title: "%s"', title)
+            throw new Error ('No release matching criteria found')
         }
 
         // download the movie
@@ -72,12 +67,11 @@ let processTitle = function (job, done) {
     co()
         .then(result => {
             retval.done = true
-            debug('title "%s" downloaded successfully', title)
+            debug('Title "%s" downloaded successfully', title)
         })
         .catch(err => {
-            console.log(err)
             retval.done = false
-            debug('skip downloading title: "%s" (%s)', title, err.message)
+            debug('Skip downloading title: "%s" (%s)', title, err.message)
         })
         .finally(() => {
             done(null, retval)
@@ -85,64 +79,61 @@ let processTitle = function (job, done) {
 }
 
 
-let Spectre = function () {
-    let spectre = { }
-    let dlQueue
-    let report
-    let conf
+function Spectre() {
+    if (!(this instanceof Spectre)) return new Spectre(cfile)
 
-    conf = { concurrency: 1 }
-    dlQueue = async.queue(processTitle, conf.concurrency)
+    this.conf = { }
+    this.dlQueue = async.queue(downloadTitle.bind(this), 1)
 
-    report = setInterval(() => {
-        let running = dlQueue.running()
-        let waiting = dlQueue.length()
+    // Setup reporter
+    let report = setInterval(function() {
+        let running = this.dlQueue.running()
+        let waiting = this.dlQueue.length()
         debug('running: %d, waiting: %d', running, waiting)
-    }, 60 * 1000)
-
-    spectre.enqueue = function (title) {
-        dlQueue.push({ conf, title })
-    }
-
-    spectre.configure = function (cnf) {
-        conf = cnf
-
-        conf.dlOptions = conf.dlOptions || { }
-        conf.dlOptions.minSize = conf.dlOptions.minSize || 0.7
-        conf.dlOptions.maxSize = conf.dlOptions.maxSize || 4.7
-        conf.dlOptions.minSize *= 1000000000
-        conf.dlOptions.maxSize *= 1000000000
-
-        conf.dlOptions.minPreferSize = conf.dlOptions.minPreferSize || 0.7
-        conf.dlOptions.maxPreferSize = conf.dlOptions.maxPreferSize || 4.7
-        conf.dlOptions.minPreferSize *= 1000000000
-        conf.dlOptions.maxPreferSize *= 1000000000
-
-        conf.dlOptions.minScore = conf.dlOptions.minScore || 0
-        conf.dlOptions.onlyCrediable = conf.dlOptions.onlyCrediable === undefined ?
-                false : Boolean(conf.dlOptions.onlyCrediable)
-        if (dlQueue.concurrency !== conf.concurrency) {
-            dlQueue.concurrency = conf.concurrency
-            dlQueue.pause()
-            dlQueue.resume()
-        }
-    }
-
-    spectre.inQueue = function () {
-        let waiting = _.map(dlQueue.tasks, 'data.title')
-        let working = _.map(dlQueue.workersList(), 'data.title')
-        return _.union(waiting, working)
-    }
-
-    return spectre
+    }.bind(this), 60 * 1000)
 }
 
+Spectre.prototype = { }
 
-module.exports = Promise.coroutine(function* (configFile) {
-    let spectre = Spectre()
+Spectre.prototype.enqueue = function (title) {
+    this.dlQueue.push(title)
+}
 
-    let conf = yield fs.readFileAsync(configFile).then(JSON.parse)
-    spectre.configure(conf)
+Spectre.prototype.configure = function (cfile) {
+    let conf = JSON.parse(fs.readFileSync(cfile))
+
+    conf.dlOptions = conf.dlOptions || { }
+    conf.dlOptions.minSize = conf.dlOptions.minSize || 0.7
+    conf.dlOptions.maxSize = conf.dlOptions.maxSize || 4.7
+    conf.dlOptions.minSize *= 1000000000
+    conf.dlOptions.maxSize *= 1000000000
+
+    conf.dlOptions.minPreferSize = conf.dlOptions.minPreferSize || 0.7
+    conf.dlOptions.maxPreferSize = conf.dlOptions.maxPreferSize || 4.7
+    conf.dlOptions.minPreferSize *= 1000000000
+    conf.dlOptions.maxPreferSize *= 1000000000
+
+    conf.dlOptions.minScore = conf.dlOptions.minScore || 0
+    conf.dlOptions.onlyCrediable = conf.dlOptions.onlyCrediable === undefined ?
+            false : Boolean(conf.dlOptions.onlyCrediable)
+
+    if (this.dlQueue.concurrency !== conf.concurrency) {
+        this.dlQueue.concurrency = conf.concurrency
+        this.dlQueue.pause()
+        this.dlQueue.resume()
+    }
+
+    this.conf = conf
+}
+
+Spectre.prototype.inQueue = function () {
+    let waiting = _.map(this.dlQueue.tasks, 'data')
+    let working = _.map(this.dlQueue.workersList(), 'data')
+    return _.union(waiting, working)
+}
+
+Spectre.prototype.run = Promise.coroutine(function* () {
+    let conf = this.conf
 
     let p = yield Promise.join(
         List.fetch(conf.lists),
@@ -161,9 +152,11 @@ module.exports = Promise.coroutine(function* (configFile) {
     	return
     }
 
-    let inQueue = spectre.inQueue()
+    let inQueue = this.inQueue()
     let toAdd = _.shuffle(_.difference(missing, inQueue))
 
     debug('Adding the following titles to the queue: %s', _.join(toAdd, ', '))
-    _.each(toAdd, spectre.enqueue)
+    _.each(toAdd, this.enqueue.bind(this))
 })
+
+module.exports = Spectre;

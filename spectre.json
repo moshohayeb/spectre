@@ -6,9 +6,7 @@
          }
      },
      "lists": [
-         "http://www.imdb.com/list/ls036922884/",
-         "http://www.imdb.com/list/ls036788022/",
-         "http://www.imdb.com/user/ur40260900/watchlist?ref_=wt_nv_wl_all_0"
+         "http://www.imdb.com/list/ls063796668/"
      ],
      "subtitles": {
          "language": "en",
@@ -25,7 +23,7 @@
          "minPreferSize": 1.5,
          "maxPreferSize": 3.7
      },
-     "concurrency": 1,
+     "concurrency": 2,
      "dlDir": "../Watchlist/",
      "tmpDir": "/tmp/spectre/"
  }

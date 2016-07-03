@@ -1,5 +1,10 @@
 'use strict'
 
+ // "http://www.imdb.com/list/ls036922884/",
+ // "http://www.imdb.com/list/ls036788022/",
+ // "http://www.imdb.com/user/ur40260900/watchlist?ref_=wt_nv_wl_all_0"
+
+
 let torrentStream = require('torrent-stream')
 let prettybyte = require('pretty-bytes')
 let debug = require('debug')('spectre:cli')
@@ -17,10 +22,10 @@ module.exports = function (torrent, conf) {
         engine.on('ready', () => {
             let swarm = engine.swarm
 
-            // download all files in the torrent
+            // Download all files in the torrent
             _.each(engine.files, f => f.select())
 
-            // set a progress reporter
+            // Set a progress reporter
             reporter = setInterval(function () {
                 let percentage = ((swarm.downloaded / engine.torrent.length) * 100).toPrecision(2)
                 debug('%s, speed: %s/s, progress: %s/%s (%d%%)',
@@ -40,7 +45,9 @@ module.exports = function (torrent, conf) {
                     size: f.length
                 }
             })
+            console.log(retval)
             resolve(retval)
+            engine.destroy(resolve.bind(retval))
         })
     }
 

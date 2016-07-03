@@ -3,28 +3,28 @@
 require('./boot')
 
 let debug = require('debug')('spectre:index')
-let spectre = require('./spectre')
+let Spectre = require('./spectre')
 
-function iter() {
-    let sleepMinutes = 5
+let spectre = new Spectre()
+
+function run() {
+    let sleepMinutes = 1
     let sleep = (1000 * 60) * sleepMinutes
 
-    spectre('./spectre.json')
+    spectre.configure('./spectre.json')
+    spectre.run()
         .then(result => {
-            throw new Error("qwr")
             ;
         })
         .catch(err => {
-            debug('an unexpected error occured, try fixing the issue below')
+            debug('An unexpected error occured, try fixing the issue below')
             debug(err)
-            debug(' ** will run again in 1 hour **')
+            debug(' ** Will run again in 1 hour **')
             sleep = (1000 * 60) * 60
         })
-        .finally(result => {
-            debug('finished probing, will recheck in %d minutes', sleepMinutes)
-            setTimeout(iter, sleep)
+        .finally(() => {
+            debug('Done checking for new movies, rechecking in %d minutes', sleepMinutes)
+            setTimeout(run, sleep)
         })
 }
-
-
-iter()
+run()

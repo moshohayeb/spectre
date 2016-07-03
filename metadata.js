@@ -19,11 +19,10 @@ let __buildURL = function (title) {
     return `${URL}/?${query}`
 }
 
-module.exports = Promise.coroutine(function* (title) {
+module.exports = function(title) {
     let url = __buildURL(title)
-    debug('Getting meta data for title: %s', title)
-    debug('Getting url: %s', url)
-    let response = yield request.getAsync(url)
-    let data = JSON.parse(response.body)
-    return _.mapKeys(data, (v, k) => { return _.camelCase(k) })
-})
+    debug('Getting meta data for title: %s (url: %s)', title, url)
+    return request.getAsync(url)
+        .then(response => JSON.parse(response.body))
+        .then(data => _.mapKeys(data, (v, k) => _.camelCase(k) ))
+}
