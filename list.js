@@ -1,5 +1,6 @@
 'use strict'
 
+let entities = require('html-entities').AllHtmlEntities;
 let cheerio = require('cheerio')
 let request = require('request')
 
@@ -32,7 +33,7 @@ let fetcher = function (list) {
 
 let fetch = function (links) {
     return Promise.map(links, fetcher, 4)
-        .then(results => _(results).flatten().uniq().value() )
+        .then(results => _(results).flatten().uniq().map(v => entities.decode(v)).value() )
 }
 
 module.exports = {

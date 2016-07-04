@@ -1,7 +1,6 @@
 'use strict'
 
 let chalk = require('chalk')
-let winston = require('winston');
 
 
 /* Override native Promise implementation (or add) globally */
