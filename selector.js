@@ -1,6 +1,8 @@
 'use strict'
 
 let debug = require('debug')('spectre:selector')
+
+let similarity = require("similarity")
 let moment = require('moment')
 let prettybyte = require('pretty-bytes');
 
@@ -11,9 +13,16 @@ let crediableUploaders = ['ETRG', 'YIFY', 'JYK', 'SPARKS', 'RARBG', 'ANOXMOUS', 
 let execludedKw = ['rus', 'russian', 'ru', '3d', 'cam', 'hindi']
 
 let includeName = function (torrent, ctx) {
-    let kebab = _.kebabCase(torrent.name)
+    let kebab = _.kebabCase(torrent.parsedName)
     let included = _.includes(kebab, ctx.kebab)
     return included
+}
+
+let similarName = function (torrent, ctx) {
+    let sim = similarity(torrent.parsedName, ctx.title)
+    let thresh = 0.8
+
+    return sim >= thresh
 }
 
 let execludeKeywords = function (torrent, ctx) {
@@ -35,7 +44,7 @@ let crediable = function (torrent, ctx) {
     return xsect.length
 }
 
-let sizecCheck = function (torrent, ctx) {
+let sizeCheck = function (torrent, ctx) {
     if (torrent.size <= ctx.options.maxSize && torrent.size >= ctx.options.minSize) return true
     return false
 }
@@ -80,8 +89,27 @@ let computeScore = function (torrent, ctx) {
     torrent.score = score
 }
 
+let augmentName = function (torrent) {
+    let { name } = torrent
+    /* By convention, the format of a title is:  Title (Year) Quality */
+    let index = /\(?\d{4}\)?/.exec(name)
+    if (!index) {
+        index = /1080p|720p|480p/.exec(name)
+    }
+
+    let sname
+    if (index) {
+        sname = name.substring(0, index['index'])
+    } else {
+        sname = name
+    }
+
+    torrent.parsedName = _.trim(sname)
+}
+
 module.exports = function (title, torrents, options) {
     let ctx = {
+        title,
         kebab: _.kebabCase(title),
         lower: _.lowerCase(title),
         options
@@ -94,16 +122,18 @@ module.exports = function (title, torrents, options) {
     let torrent =
         _.chain(torrents)
         .compact()
+        .each(augmentName)
         .filter(wrap(includeName))
+        .filter(wrap(similarName))
         .filter(wrap(execludeKeywords))
         .filter(wrap(ensureAscii))
         .filter(wrap(crediable))
-        .filter(wrap(sizecCheck))
+        .filter(wrap(sizeCheck))
+        .tap(console.log)
         .filter(wrap(removeZeroSeeds))
         /* Add more filters here*/
         .each(wrap(computeScore))
         .orderBy('score', 'desc')
-        // .tap(console.log)
         .first()
         .value()
 
@@ -112,5 +142,7 @@ module.exports = function (title, torrents, options) {
 
     debug('Chosen torrent for title: "%s" -%s- %s:%s:%s:%s score=%s',
         title, torrent.name, torrent.provider, torrent.seeds, torrent.peers, prettybyte(torrent.size), torrent.score)
+
+    die('xx')
     return torrent
 }

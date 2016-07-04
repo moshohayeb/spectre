@@ -18,7 +18,7 @@
      "dlOptions": {
          "onlyCrediable": true,
          "minScore": 50,
-         "minSize": 0.7,
+         "minSize": 0.6,
          "maxSize": 4.7,
          "minPreferSize": 1.5,
          "maxPreferSize": 3.7
