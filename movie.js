@@ -12,8 +12,8 @@ let MOVIE_REGEX = /^.+ \(\d{2,4}\)\.\w+$/
 
 let persist = Promise.coroutine(function* (info, conf) {
 
-    let dirname = sprintf('%s (%d)', info.metadata.title, info.metadata.year)
-    let filename = sprintf('%s (%d).%s', info.metadata.title, info.metadata.year, info.movie.fileType.ext)
+    let dirname = sprintf('%s (%d)', info.metadata.title, info.metadata.year).replace(':', ';')
+    let filename = sprintf('%s (%d).%s', info.metadata.title, info.metadata.year, info.movie.fileType.ext).replace(':', ';')
 
     dirname = path.join(conf.dlDir, dirname)
     let moviePath = path.join(dirname, filename)
@@ -44,13 +44,12 @@ let scan = function (moviesDir) {
         .map(fullPath => {
             let f = path.basename(fullPath)
             let idx = /\(\d{2,4}\)$/.exec(f)['index'] - 1
-            return f.substr(0, idx)
+            return f.substr(0, idx).replace(';', ':')
         })
 }
 
 /* Try to find (possibly uncompress) the actual video file */
 let detect = function (files) {
-
     let video = _.reduce(files, (acm, f) => {
         f.fileType = fileType(readChunk.sync(f.path, 0, 262))
         if (!f.fileType) return acm

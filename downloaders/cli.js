@@ -45,9 +45,7 @@ module.exports = function (torrent, conf) {
                     size: f.length
                 }
             })
-            console.log(retval)
-            resolve(retval)
-            engine.destroy(resolve.bind(retval))
+            engine.destroy(() => resolve(retval))
         })
     }
 
